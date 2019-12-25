@@ -4,72 +4,46 @@
 from PIL import Image
 
 # loads a gif into the array for storage
-def gif_loader(file, arr):
+def gif_loader(file):
+	arr = []
 	gif = Image.open(file, 'r')
 	try:
 		while 1:
-			arr.append(gif.copy())
+			arr.append(gif.copy().convert('RGB'))
 			gif.seek(len(arr))
 	except EOFError:
-		pass
+		return arr
 
 class Face:
-	anim_blink = []
-	anim_happy = []
-	anim_sad = []
-	anim_cry = []
-	anim_angry = []
-	anim_suspicious = []
-	anim_sleep = []
-	anim_surprise = []
-	anim_off = []
-	anim_heart_in = []
-	anim_heart_loop = []
-	anim_sunglasses = []
-	anim_x_eyes = []
-	anim_left = []
-	anim_right = []
-	anim_exclaim = []
-	anim_question = []
-	anim_thinking = []
-	anim_smile_closed = []
-	anim_smile_open =[]
-	anim_frown_closed = []
-	anim_frown_open = []
-	anim_o = []
-	anim_smirk = []
-	anim_tongue = []
-	anim_cat = []
-	anim_mouth_off = []
 
 	def __init__(self):
-		gif_loader('faces/blink.gif', self.anim_blink)
-		gif_loader('faces/happy.gif', self.anim_happy)
-		gif_loader('faces/sad.gif', self.anim_sad)
-		gif_loader('faces/cry.gif', self.anim_cry)
-		gif_loader('faces/angry.gif', self.anim_angry)
-		gif_loader('faces/suspicious.gif', self.anim_suspicious)
-		gif_loader('faces/sleep.gif', self.anim_sleep)
-		gif_loader('faces/surprise.gif', self.anim_surprise)
-		gif_loader('faces/off.gif', self.anim_off)
-		gif_loader('faces/heart_in.gif', self.anim_heart_in)
-		gif_loader('faces/heart_loop.gif', self.anim_heart_loop)
-		gif_loader('faces/sunglasses.gif', self.anim_sunglasses)
-		gif_loader('faces/x_eyes.gif', self.anim_x_eyes)
-		gif_loader('faces/left.gif', self.anim_left)
-		gif_loader('faces/right.gif', self.anim_right)
-		gif_loader('faces/exclaim.gif', self.anim_exclaim)
-		gif_loader('faces/question.gif', self.anim_question)
-		gif_loader('faces/thinking.gif', self.anim_thinking)
-		gif_loader('faces/smile_closed.gif', self.anim_smile_closed)
-		gif_loader('faces/smile_open.gif', self.anim_smile_open)
-		gif_loader('faces/frown_closed.gif', self.anim_frown_closed)
-		gif_loader('faces/frown_open.gif', self.anim_frown_open)
-		gif_loader('faces/o_mouth.gif', self.anim_o)
-		gif_loader('faces/smirk.gif', self.anim_smirk)
-		gif_loader('faces/tongue.gif', self.anim_tongue)
-		gif_loader('faces/cat.gif', self.anim_cat)
-		gif_loader('faces/mouth_off', self.anim_mouth_off)
+		self.anim_blink = gif_loader('faces/blink.gif')
+		self.anim_happy = gif_loader('faces/happy.gif')
+		self.anim_sad = gif_loader('faces/sad.gif')
+		self.anim_cry = gif_loader('faces/cry.gif')
+		self.anim_angry = gif_loader('faces/angry.gif')
+		self.anim_suspicious = gif_loader('faces/suspicious.gif')
+		self.anim_sleep = gif_loader('faces/sleep.gif')
+		self.anim_surprise = gif_loader('faces/surprise.gif')
+		self.anim_off = gif_loader('faces/off.gif')
+		self.anim_heart_in = gif_loader('faces/heart_in.gif')
+		self.anim_heart_loop = gif_loader('faces/heart_loop.gif')
+		self.anim_sunglasses = gif_loader('faces/sunglasses.gif')
+		self.anim_x_eyes = gif_loader('faces/x_eyes.gif')
+		self.anim_left = gif_loader('faces/left.gif')
+		self.anim_right = gif_loader('faces/right.gif')
+		self.anim_exclaim = gif_loader('faces/exclaim.gif')
+		self.anim_question = gif_loader('faces/question.gif')
+		self.anim_thinking = gif_loader('faces/thinking.gif')
+		self.anim_smile_closed = gif_loader('faces/smile_closed.gif')
+		self.anim_smile_open = gif_loader('faces/smile_open.gif')
+		self.anim_frown_closed = gif_loader('faces/frown_closed.gif')
+		self.anim_frown_open = gif_loader('faces/frown_open.gif')
+		self.anim_o = gif_loader('faces/o_mouth.gif')
+		self.anim_smirk = gif_loader('faces/smirk.gif')
+		self.anim_tongue = gif_loader('faces/tongue.gif')
+		self.anim_cat = gif_loader('faces/cat.gif')
+		self.anim_mouth_off = gif_loader('faces/mouth_off.gif')
 		
 
 		self.hold_idle = self.anim_blink[0]
