@@ -11,6 +11,7 @@ from PIL import Image, ImageDraw
 from multiprocessing import JoinableQueue, Process
 
 from face import Face
+from animation import Animation
 
 # constants used throughout project
 WIDTH = 32
@@ -20,6 +21,7 @@ IDLE_TIME = 50
 EYES = 0
 MOUTHS = 16
 
+
 class Kabuki:
 
     def __init__(self, matrix):
@@ -28,22 +30,28 @@ class Kabuki:
         self.eye_queue = queue.Queue()
         self.mouth_queue = queue.Queue()
         self.loop_proc = Process(target=self.loop)
+        self.eye_latch = self.face.hold_frames['blink']
+        self.mouth_latch = self.face.hold_frames['smile_closed']
+
+        # flask listener is a seperate thread
         t = threading.Thread(target=self.loop)
         t.start()
+        
+        # start the render loop on main thread
         self.render_loop()
 
     def start_flask(self):
         self.loop_proc.start()
 
     def play_seq(self, expression, board, direction):
-        
+        #add sequence to correct queue and reverse if needed
         if board == EYES:
             sequence = self.face.eyes[expression]
         else:
             sequence = self.face.mouths[expression]
       
         if direction == 'r':
-            sequence = sequence[::-1]
+            sequence = sequence.get_reversed()
 
         if board == EYES:
             self.eye_queue.put(sequence)
@@ -51,7 +59,8 @@ class Kabuki:
             self.mouth_queue.put(sequence)
 
     def play_hold(self, hold, board, duration=IDLE_TIME):
-        hold_seq = [self.face.hold_frames[hold] for i in range(duration)]
+        #generate a bunch of frames to hold
+        hold_seq = Animation('hold_' + hold, [self.face.hold_frames[hold] for i in range(duration)])
 
         if board == EYES:
             self.eye_queue.put(hold_seq)
@@ -60,34 +69,40 @@ class Kabuki:
 
     def compute_eyes(self):
         idx = 0
-        idle_eye_frame = self.face.hold_frames['blink']
-        current_eye = [idle_eye_frame]
+        #default hold is no expression from blink
+        idle_eye_seq = Animation('idle', [self.face.hold_frames['blink']])
+        current_eye = idle_eye_seq
         while(True):
             if self.eye_queue.empty() and len(current_eye) == idx:
                 #reset
                 idx = 0
-                current_eye = [idle_eye_frame]
+                current_eye = idle_eye_seq
             else:
                 if not self.eye_queue.empty():
                     current_eye = self.eye_queue.get()
-                    idx = 1
+                    if self.face.is_latch(current_eye):
+                        idle_eye_seq = current_eye
+                    idx = 0
             #print(current_eye, idx)
             yield current_eye[idx]
             idx += 1
 
     def compute_mouth(self):
         idx = 0
-        idle_mouth_frame = self.face.hold_frames['smile_closed']
-        current_mouth = [idle_mouth_frame]
+        #default hold is a line from smile_closed
+        idle_mouth_seq = Animation('idle_mouth', [self.face.hold_frames['smile_closed']])
+        current_mouth = idle_mouth_seq
         while(True):
             if self.mouth_queue.empty() and len(current_mouth) == idx:
                 #reset
                 idx = 0
-                current_mouth = [idle_mouth_frame]
+                current_mouth = idle_mouth_seq
             else:
                 if not self.mouth_queue.empty():
                     current_mouth = self.mouth_queue.get()
-                    idx = 1
+                    if self.face.is_latch(current_mouth):
+                        idle_mouth_seq = current_mouth
+                    idx = 0
             yield current_mouth[idx]
             idx += 1
 
@@ -96,7 +111,7 @@ class Kabuki:
         mouth_frame = self.compute_mouth()
         
         while(True):
-            # do work to combine eyes and mouths and yield
+            # do work to combine eyes and mouths and yield resulting frame
             frame = Image.new('RGB', (WIDTH, HEIGHT))
             try:
                 frame.paste(next(eye_frame), (0, EYES))
@@ -118,26 +133,30 @@ class Kabuki:
                 time.sleep(SPEED)
             except Exception as e:
                 print('Render Exception:', e)
-        
-    def reverse_frames(self, seq):
-        return seq[::-1]
 
     def loop(self):
         while(True):
             self.play_seq('blink', EYES, 'f')
             time.sleep(2)
             self.play_seq('happy', EYES, 'f')
-            self.play_hold('happy', EYES, 1000)
+            time.sleep(2)
+            self.play_hold('happy', EYES, 200)
+            time.sleep(2)
             self.play_seq('happy', EYES, 'r')
             time.sleep(3)
             self.play_seq('smile_closed', MOUTHS, 'f')
+            time.sleep(2)
             self.play_hold('smile_closed', MOUTHS)
+            time.sleep(2)
             self.play_seq('smile_closed', MOUTHS, 'r')
 
             time.sleep(3)
             self.play_seq('sad', EYES, 'f')
+            time.sleep(2)
             self.play_hold('sad', EYES)
+            time.sleep(2)
             self.play_seq('frown_open', MOUTHS, 'f')
+            time.sleep(2)
             self.play_hold('frown_open', MOUTHS, 200)
             time.sleep(2)
             self.play_seq('cry', EYES, 'f')
