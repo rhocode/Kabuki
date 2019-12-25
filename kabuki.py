@@ -15,10 +15,10 @@ from face import Face
 # constants used throughout project
 WIDTH = 32
 HEIGHT = 32
-SPEED = 1.0 / 20.0
+SPEED = 1.0 / 15.0
 IDLE_TIME = 50
 EYES = 0
-MOUTH = 16
+MOUTHS = 16
 
 class Kabuki:
 
@@ -28,53 +28,20 @@ class Kabuki:
         self.eye_queue = queue.Queue()
         self.mouth_queue = queue.Queue()
         self.loop_proc = Process(target=self.loop)
-        #self.compute_proc = Process(target=self.compute_frame)
-        self.eye_proc = Process(target=self.compute_eyes)
-        self.mouth_proc = Process(target=self.compute_mouth)
-        self.render_proc = Process(target=self.render_loop)
         t = threading.Thread(target=self.loop)
         t.start()
-        #self.reset_face()
         self.render_loop()
 
-    def test_queue(self):
-        print('test_queue')
-        while 1:
-            self.eye_queue.put(1)
-            time.sleep(5)
-            self.eye_queue.get()
-            time.sleep(5)
-
-    def test_draw(self):
-        while 1:
-            print(self.eye_queue.empty())
-            image = Image.new("RGB", (32, 32))  # Can be larger than matrix if wanted!!
-            draw = ImageDraw.Draw(image)  # Declare Draw instance before prims
-            # Draw some shapes into image (no immediate effect on matrix)...
-            draw.rectangle((0, 0, 31, 31), fill=(0, 0, 0), outline=(0, 0, 255))
-            draw.line((0, 0, 31, 31), fill=(255, 0, 0))
-            draw.line((0, 31, 31, 0), fill=(0, 255, 0))
-
-            # Then scroll image across matrix...
-            for n in range(-32, 33):  # Start off top-left, move off bottom-right
-                self.matrix.Clear()
-                self.matrix.SetImage(image, n, n)
-                time.sleep(0.05)
-
-    def start_render(self):
+    def start_flask(self):
         self.loop_proc.start()
-        #self.eye_proc.start()
-        #self.mouth_proc.start()
-        #self.render_proc.start()
-
 
     def play_seq(self, expression, board, direction):
         
         if board == EYES:
             sequence = self.face.eyes[expression]
         else:
-            sequence = self.face.mouth[expression]
-
+            sequence = self.face.mouths[expression]
+      
         if direction == 'r':
             sequence = sequence[::-1]
 
@@ -82,10 +49,9 @@ class Kabuki:
             self.eye_queue.put(sequence)
         else:
             self.mouth_queue.put(sequence)
-        
 
-    def play_hold(self, hold, board):
-        hold_seq = [self.face.hold_frames[hold] for i in range(IDLE_TIME)]
+    def play_hold(self, hold, board, duration=IDLE_TIME):
+        hold_seq = [self.face.hold_frames[hold] for i in range(duration)]
 
         if board == EYES:
             self.eye_queue.put(hold_seq)
@@ -104,6 +70,7 @@ class Kabuki:
             else:
                 if not self.eye_queue.empty():
                     current_eye = self.eye_queue.get()
+                    idx = 1
             #print(current_eye, idx)
             yield current_eye[idx]
             idx += 1
@@ -120,38 +87,38 @@ class Kabuki:
             else:
                 if not self.mouth_queue.empty():
                     current_mouth = self.mouth_queue.get()
+                    idx = 1
             yield current_mouth[idx]
             idx += 1
-
-
 
     def compute_frame(self):
         eye_frame = self.compute_eyes()
         mouth_frame = self.compute_mouth()
         
         while(True):
-            # do work to combine eye and mouth and add to render queue
-            #print(next(eye_frame), EYES, MOUTH)
+            # do work to combine eyes and mouths and yield
             frame = Image.new('RGB', (WIDTH, HEIGHT))
-            frame.paste(next(eye_frame), (0, EYES))
-            #frame.paste(next(mouth_frame), (0, MOUTH))
+            try:
+                frame.paste(next(eye_frame), (0, EYES))
+            except Exception as e:
+                print('Eye Exception:', e)
+            
+            try:
+                frame.paste(next(mouth_frame), (0, MOUTHS))
+            except Exception as e:
+                print('Mouth Exception:', e)
             yield frame
             
 
     def render_loop(self):
         next_frame = self.compute_frame()
         while(True):
-            self.matrix.SetImage(next(next_frame), 0, 0)
-            time.sleep(SPEED)
-        pass
-
-
-    def reset_face(self):
-        self.play_hold(self.face.hold_frames['blink'], EYES)
-        self.play_seq(self.face.eyes['blink'], EYES)
-        self.play_hold(self.face.hold_idle, EYES)
-        self.play_hold(self.face.hold_line, MOUTH)
-
+            try:
+                self.matrix.SetImage(next(next_frame), 0, 0)
+                time.sleep(SPEED)
+            except Exception as e:
+                print('Render Exception:', e)
+        
     def reverse_frames(self, seq):
         return seq[::-1]
 
@@ -160,10 +127,30 @@ class Kabuki:
             self.play_seq('blink', EYES, 'f')
             time.sleep(2)
             self.play_seq('happy', EYES, 'f')
-            self.play_hold('happy', EYES)
+            self.play_hold('happy', EYES, 1000)
             self.play_seq('happy', EYES, 'r')
+            time.sleep(3)
+            self.play_seq('smile_closed', MOUTHS, 'f')
+            self.play_hold('smile_closed', MOUTHS)
+            self.play_seq('smile_closed', MOUTHS, 'r')
+
+            time.sleep(3)
+            self.play_seq('sad', EYES, 'f')
+            self.play_hold('sad', EYES)
+            self.play_seq('frown_open', MOUTHS, 'f')
+            self.play_hold('frown_open', MOUTHS, 200)
             time.sleep(2)
-            
+            self.play_seq('cry', EYES, 'f')
+            time.sleep(1)
+            self.play_seq('cry', EYES, 'f')
+            time.sleep(1)
+            self.play_seq('cry', EYES, 'f')
+            time.sleep(1)
+            self.play_seq('sad', EYES, 'r')
+            time.sleep(2)
+            self.play_seq('frown_open', MOUTHS, 'r')
+            time.sleep(2)
+
         #self.matrix.Clear()
         # animations with "loop" are standalone loops, but may need to be prefaced
         # by a different state (eg sad first then cry) - if triggered seperately, split out seq
@@ -255,51 +242,51 @@ class Kabuki:
             # self.play_hold(self.face.hold_question, EYES)
             # self.play_seq(reversed(self.face.eyes['question']), EYES)
 
-            # ##### MOUTH #####
+            # ##### mouths #####
             # # idle
-            # self.play_hold(self.face.hold_line, MOUTH)
+            # self.play_hold(self.face.hold_line, mouths)
 
             # # smile closed
-            # self.play_seq(self.face.mouths['smile_closed'], MOUTH)
-            # self.play_hold(self.face.hold_smile_closed, MOUTH)
-            # self.play_seq(reversed(self.face.mouths['smile_closed']), MOUTH)
+            # self.play_seq(self.face.mouths['smile_closed'], mouths)
+            # self.play_hold(self.face.hold_smile_closed, mouths)
+            # self.play_seq(reversed(self.face.mouths['smile_closed']), mouths)
 
             # # smile open
-            # self.play_seq(self.face.mouths['smile_open'], MOUTH)
-            # self.play_hold(self.face.hold_smile_open, MOUTH)
-            # self.play_seq(reversed(self.face.mouths['smile_open']), MOUTH)
+            # self.play_seq(self.face.mouths['smile_open'], mouths)
+            # self.play_hold(self.face.hold_smile_open, mouths)
+            # self.play_seq(reversed(self.face.mouths['smile_open']), mouths)
 
             # # frown closed
-            # self.play_seq(self.face.mouths['frown_closed'], MOUTH)
-            # self.play_hold(self.face.hold_frown_closed, MOUTH)
-            # self.play_seq(reversed(self.face.mouths['frown_closed']), MOUTH)
+            # self.play_seq(self.face.mouths['frown_closed'], mouths)
+            # self.play_hold(self.face.hold_frown_closed, mouths)
+            # self.play_seq(reversed(self.face.mouths['frown_closed']), mouths)
 
             # # frown open
-            # self.play_seq(self.face.mouths['frown_open'], MOUTH)
-            # self.play_hold(self.face.hold_frown_open, MOUTH)
-            # self.play_seq(reversed(self.face.mouths['frown_open']), MOUTH)
+            # self.play_seq(self.face.mouths['frown_open'], mouths)
+            # self.play_hold(self.face.hold_frown_open, mouths)
+            # self.play_seq(reversed(self.face.mouths['frown_open']), mouths)
             
             # # surprise o
-            # self.play_seq(self.face.mouths['o_mouth'], MOUTH)
-            # self.play_hold(self.face.hold_o_mouth, MOUTH)
-            # self.play_seq(reversed(self.face.mouths['o_mouth']), MOUTH)
+            # self.play_seq(self.face.mouths['o_mouth'], mouths)
+            # self.play_hold(self.face.hold_o_mouth, mouths)
+            # self.play_seq(reversed(self.face.mouths['o_mouth']), mouths)
 
             # # smirk
-            # self.play_seq(self.face.mouths['smirk'], MOUTH)
-            # self.play_hold(self.face.hold_smirk, MOUTH)
-            # self.play_seq(reversed(self.face.mouths['smirk']), MOUTH)            
+            # self.play_seq(self.face.mouths['smirk'], mouths)
+            # self.play_hold(self.face.hold_smirk, mouths)
+            # self.play_seq(reversed(self.face.mouths['smirk']), mouths)            
 
             # # tongue out
-            # self.play_seq(self.face.mouths['tongue'], MOUTH)
-            # self.play_hold(self.face.hold_tongue, MOUTH)
-            # self.play_seq(reversed(self.face.mouths['tongue']), MOUTH)
+            # self.play_seq(self.face.mouths['tongue'], mouths)
+            # self.play_hold(self.face.hold_tongue, mouths)
+            # self.play_seq(reversed(self.face.mouths['tongue']), mouths)
 
             # # cat
-            # self.play_seq(self.face.mouths['cat'], MOUTH)
-            # self.play_hold(self.face.hold_cat, MOUTH)
-            # self.play_seq(reversed(self.face.mouths['cat']), MOUTH)
+            # self.play_seq(self.face.mouths['cat'], mouths)
+            # self.play_hold(self.face.hold_cat, mouths)
+            # self.play_seq(reversed(self.face.mouths['cat']), mouths)
 
             # # off
-            # self.play_seq(self.face.mouths['mouth_off'], MOUTH)
-            # self.play_hold(self.face.hold_mouth_off, MOUTH)
-            # self.play_seq(reversed(self.face.mouths['mouth_off']), MOUTH)
+            # self.play_seq(self.face.mouths['mouth_off'], mouths)
+            # self.play_hold(self.face.hold_mouth_off, mouths)
+            # self.play_seq(reversed(self.face.mouths['mouth_off']), mouths)

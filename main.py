@@ -23,6 +23,12 @@ if __name__ == '__main__':
     print('Starting Kabuki with', str(options.rows), 'rows', str(options.cols), 'cols', str(options.pixel_mapper_config), str(options.hardware_mapping))
     matrix = RGBMatrix(options = options)
 
-    kabuki = Kabuki(matrix)
-    kabuki.start_render()
-
+    try:
+        kabuki = Kabuki(matrix)
+        kabuki.start_flask()
+    except KeyboardInterrupt:
+        matrix.Clear()
+        print('Ctrl+C pressed, exiting')
+        raise
+    except Exception as e:
+        print('Exception: ', e)
