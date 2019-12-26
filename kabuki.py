@@ -3,9 +3,11 @@
 # Main kabuki.py
 
 # imports - use the rpi-rgb-led-matrix instructions to install dependencies
+import json
 import time
 import queue
 import threading
+from flask import Flask, request
 from rgbmatrix import graphics
 from PIL import Image, ImageDraw
 from multiprocessing import JoinableQueue, Process
@@ -26,37 +28,84 @@ class Kabuki:
 
     def __init__(self, matrix):
         self.matrix = matrix
+        # self.flask_app = flask_app
         self.face = Face()
         self.eye_queue = queue.Queue()
         self.mouth_queue = queue.Queue()
-        self.loop_proc = Process(target=self.loop)
-        self.eye_latch = self.face.hold_frames['blink']
-        self.mouth_latch = self.face.hold_frames['smile_closed']
+        self.loop_proc = Process(target=self.process_commands)
+        self.eye_latch = self.face.eyes['blink'].get_latched()
+        self.mouth_latch = self.face.mouths['idle_mouth'].get_latched()
+
+        flask_app = Flask(__name__)
+        flask_app.use_reloader = False
+        flask_app.debug = False
+
+        @flask_app.route('/', methods=['GET'])
+        def get_index():
+            print('index')
+            return 'Hello Kabuki'
+
+        @flask_app.route('/command', methods=['POST'])
+        def command():
+            json_request = json.loads(request.data)
+            print('post command', json_request)
+            try:
+                if 'eye' in json_request:
+                    self.play_seq(json_request['eye'], EYES, json_request['direction'])
+                if 'mouth' in json_request:
+                    self.play_seq(json_request['mouth'], MOUTHS, json_request['direction'])
+            except KeyError as e:
+                return {'error': str(e) , 'type' : 'KeyError'}
+            except Exception as e:
+                print('Command Exception: ', e)
+                return {'error': 'Internal Server Error'}
+            return {'eye' : self.eye_latch.key, 'mouth' : self.mouth_latch.key}
+
+        @flask_app.route('/status', methods=['GET'])
+        def get_status():
+            return {'eye' : self.eye_latch.key, 'mouth' : self.mouth_latch.key}
+
+        @flask_app.route('/list', methods=['GET'])
+        def get_list():
+            return {'eyes' : [eye for eye in self.face.eyes] , 
+                    'mouths' : [mouth for mouth in self.face.mouths]
+                }
+
+        def run_flask():
+            flask_app.run(host='0.0.0.0')
 
         # flask listener is a seperate thread
-        t = threading.Thread(target=self.loop)
+        t = threading.Thread(target=run_flask)
         t.start()
+
         
         # start the render loop on main thread
         self.render_loop()
 
     def start_flask(self):
+        print('start_flask')
         self.loop_proc.start()
+        self.flask_app.run(use_reloader=False)
 
     def play_seq(self, expression, board, direction):
         #add sequence to correct queue and reverse if needed
+        used_queue = None
+        seq_source = None
+        
         if board == EYES:
-            sequence = self.face.eyes[expression]
+            used_queue = self.eye_queue
+            seq_source = self.face.eyes
         else:
-            sequence = self.face.mouths[expression]
+            used_queue = self.mouth_queue
+            seq_source = self.face.mouths
+
+        sequence = seq_source[expression]
       
         if direction == 'r':
             sequence = sequence.get_reversed()
-
-        if board == EYES:
-            self.eye_queue.put(sequence)
-        else:
-            self.mouth_queue.put(sequence)
+            
+        used_queue.put(sequence)
+    
 
     def play_hold(self, hold, board, duration=IDLE_TIME):
         #generate a bunch of frames to hold
@@ -70,40 +119,38 @@ class Kabuki:
     def compute_eyes(self):
         idx = 0
         #default hold is no expression from blink
-        idle_eye_seq = Animation('idle', [self.face.hold_frames['blink']])
-        current_eye = idle_eye_seq
+        self.current_eye = self.eye_latch
         while(True):
-            if self.eye_queue.empty() and len(current_eye) == idx:
+            if self.eye_queue.empty() and len(self.current_eye) == idx:
                 #reset
                 idx = 0
-                current_eye = idle_eye_seq
+                self.current_eye = self.eye_latch
             else:
                 if not self.eye_queue.empty():
-                    current_eye = self.eye_queue.get()
-                    if self.face.is_latch(current_eye):
-                        idle_eye_seq = current_eye
+                    self.current_eye = self.eye_queue.get()
+                    if self.current_eye.is_latch():
+                        self.eye_latch = self.current_eye.get_latched()
                     idx = 0
             #print(current_eye, idx)
-            yield current_eye[idx]
+            yield self.current_eye[idx]
             idx += 1
 
     def compute_mouth(self):
         idx = 0
         #default hold is a line from smile_closed
-        idle_mouth_seq = Animation('idle_mouth', [self.face.hold_frames['smile_closed']])
-        current_mouth = idle_mouth_seq
+        self.current_mouth = self.mouth_latch
         while(True):
-            if self.mouth_queue.empty() and len(current_mouth) == idx:
+            if self.mouth_queue.empty() and len(self.current_mouth) == idx:
                 #reset
                 idx = 0
-                current_mouth = idle_mouth_seq
+                self.current_mouth = self.mouth_latch
             else:
                 if not self.mouth_queue.empty():
-                    current_mouth = self.mouth_queue.get()
-                    if self.face.is_latch(current_mouth):
-                        idle_mouth_seq = current_mouth
+                    self.current_mouth = self.mouth_queue.get()
+                    if self.current_mouth.is_latch():
+                        self.mouth_latch = self.current_mouth.get_latched()
                     idx = 0
-            yield current_mouth[idx]
+            yield self.current_mouth[idx]
             idx += 1
 
     def compute_frame(self):
@@ -134,8 +181,12 @@ class Kabuki:
             except Exception as e:
                 print('Render Exception:', e)
 
-    def loop(self):
+    
+    def process_commands(self):
+        print('process start')
+
         while(True):
+            
             self.play_seq('blink', EYES, 'f')
             time.sleep(2)
             self.play_seq('happy', EYES, 'f')
@@ -149,7 +200,6 @@ class Kabuki:
             self.play_hold('smile_closed', MOUTHS)
             time.sleep(2)
             self.play_seq('smile_closed', MOUTHS, 'r')
-
             time.sleep(3)
             self.play_seq('sad', EYES, 'f')
             time.sleep(2)

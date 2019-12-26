@@ -4,6 +4,8 @@
 
 # imports - use the rpi-rgb-led-matrix instructions to install dependencies
 import time
+import threading
+from flask import Flask
 from rgbmatrix import RGBMatrix, RGBMatrixOptions
 
 from kabuki import Kabuki
@@ -25,7 +27,9 @@ if __name__ == '__main__':
 
     try:
         kabuki = Kabuki(matrix)
-        kabuki.start_flask()
+        #t = threading.Thread(target=flask_app.run)
+        #t.start()
+        #kabuki.start_flask()
     except KeyboardInterrupt:
         matrix.Clear()
         print('Ctrl+C pressed, exiting')

@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
 # Face.py for loading GIFs and images
-import os
-from PIL import Image
-
+import utils
 from animation import Animation
 
 class Face:
@@ -11,18 +9,26 @@ class Face:
     def __init__(self):
         self.eyes = {}
         self.mouths = {}
-        self.hold_overrides = {'blink' : 0, 'smile_closed' : 0}
+        self.hold_overrides = {'blink' : 0, 'idle_mouth' : 0}
         self.hold_frames = {}
         self.eye_latches = {'blink'}
         self.mouth_latches = {'smile_closed'}
+        self.special_attr_eyes = {
+            'blink' : {
+                'hold_frame' : 0,
+            },
+        }
+        self.special_attr_mouths = {
+            'idle_mouth' : {
+                'hold_frame' : 0,
+            },
+        }
 
-        for item in os.listdir("faces/eyes"):
-            filename = item.split(".gif")[0]
-            self.eyes[filename] = self.gif_loader("faces/eyes/" + item, filename)
-
-        for item in os.listdir("faces/mouths"):
-            filename = item.split(".gif")[0]
-            self.mouths[filename] = self.gif_loader("faces/mouths/" + item, filename)
+                # Load Eyes
+        utils.load_files("faces/eyes", self.special_attr_eyes, self.eyes, "faces/eyes/")
+        
+        # Load Mouths
+        utils.load_files("faces/mouths", self.special_attr_mouths, self.mouths, "faces/mouths/")
         
         for i,value in self.mouths.items():
             self.hold_frames[i] = value[self.hold_overrides[i]] if self.hold_overrides.get(i, None) else value[-1]
@@ -39,16 +45,5 @@ class Face:
             self.parsed_latches[mouth] = item
         
     
-    def is_latch(self, expression):
-        return expression in self.parsed_latches
-
-    def gif_loader(self, file, filename):
-        # loads a gif into the array for storage
-        arr = []
-        gif = Image.open(file, 'r')
-        try:
-            while(True):
-                arr.append(gif.copy().convert('RGB'))
-                gif.seek(len(arr))
-        except EOFError:
-            return Animation(filename, arr)
+    def is_latch(self, animation):
+        return animation.is_latch()
