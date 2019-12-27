@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
 # animation.py for storing image sequences and key
+
+
 class Animation:
-    def __init__(self, key = '', sequence = [], attrs = {}):
+    def __init__(self, key='', sequence=[], attrs={}):
         self.key = key
         self.sequence = sequence
         self.attrs = attrs
@@ -23,11 +25,11 @@ class Animation:
 
     def __len__(self):
         return len(self.sequence)
-      
+
     def is_latch(self):
-      return self.attrs.get("latch", True)
-    
+        return self.attrs.get("latch", True)
+
     def get_latched(self):
-      frame = self.attrs.get('hold_frame', -1)
-      newAttrs = self.attrs.copy()
-      return Animation('hold_' + self.key, [self.sequence[frame]])
+        frame = self.attrs.get('hold_frame', -1)
+        newAttrs = self.attrs.copy()
+        return Animation('hold_' + self.key, [self.sequence[frame]])
