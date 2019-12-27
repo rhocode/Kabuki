@@ -16,25 +16,21 @@ class Face:
         self.special_attr_mouths = {"idle_mouth": {"hold_frame": 0}}
 
         # Load Eyes
-        utils.load_files("faces/eyes", self.special_attr_eyes, self.eyes, "faces/eyes/")
+        utils.load_files("faces/eyes", self.special_attr_eyes, self.eyes,
+                         "faces/eyes/")
 
         # Load Mouths
-        utils.load_files(
-            "faces/mouths", self.special_attr_mouths, self.mouths, "faces/mouths/"
-        )
+        utils.load_files("faces/mouths", self.special_attr_mouths, self.mouths,
+                         "faces/mouths/")
 
         for i, value in self.mouths.items():
-            self.hold_frames[i] = (
-                value[self.hold_overrides[i]]
-                if self.hold_overrides.get(i, None)
-                else value[-1]
-            )
+            self.hold_frames[i] = (value[self.hold_overrides[i]]
+                                   if self.hold_overrides.get(i, None) else
+                                   value[-1])
         for i, value in self.eyes.items():
-            self.hold_frames[i] = (
-                value[self.hold_overrides[i]]
-                if self.hold_overrides.get(i, None)
-                else value[-1]
-            )
+            self.hold_frames[i] = (value[self.hold_overrides[i]]
+                                   if self.hold_overrides.get(i, None) else
+                                   value[-1])
         # print(self.hold_frames)
         self.parsed_latches = {}
         for item in self.eye_latches:

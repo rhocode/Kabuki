@@ -29,9 +29,8 @@ def gif_loader(file, filename, attrs):
 
 
 def get_host_ip():
-    return re.search(
-        re.compile(r"(?<=inet )(.*)(?=\/)", re.M), os.popen("ip addr show usb0").read()
-    ).groups()[0]
+    return re.search(re.compile(r"(?<=inet )(.*)(?=\/)", re.M),
+                     os.popen("ip addr show usb0").read()).groups()[0]
 
 
 def command_shutdown():

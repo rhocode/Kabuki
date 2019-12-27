@@ -65,11 +65,11 @@ class Kabuki:
             print("post command", json_request)
             try:
                 if "eye" in json_request:
-                    self.play_seq(json_request["eye"], EYES, json_request["direction"])
+                    self.play_seq(json_request["eye"], EYES,
+                                  json_request["direction"])
                 if "mouth" in json_request:
-                    self.play_seq(
-                        json_request["mouth"], MOUTHS, json_request["direction"]
-                    )
+                    self.play_seq(json_request["mouth"], MOUTHS,
+                                  json_request["direction"])
                 if "shutdown" in json_request:
                     if json_request["shutdown"] == "confirm":
                         command_shutdown()
@@ -98,9 +98,9 @@ class Kabuki:
 
         def run_flask():
             flask_app.run(host="0.0.0.0", use_reloader=False)
-            flask_app.add_url_rule(
-                "/favicon.ico", redirect_to=url_for("static", filename="icon.png")
-            )
+            flask_app.add_url_rule("/favicon.ico",
+                                   redirect_to=url_for("static",
+                                                       filename="icon.png"))
 
         # flask listener is a seperate thread
         t = threading.Thread(target=run_flask)
@@ -131,8 +131,8 @@ class Kabuki:
     def play_hold(self, hold, board, duration=IDLE_TIME):
         # generate a bunch of frames to hold
         hold_seq = Animation(
-            "hold_" + hold, [self.face.hold_frames[hold] for i in range(duration)]
-        )
+            "hold_" + hold,
+            [self.face.hold_frames[hold] for i in range(duration)])
 
         if board == EYES:
             self.eye_queue.put(hold_seq)
