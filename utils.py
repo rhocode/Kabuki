@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import os
+import re
 from PIL import Image
 
 from animation import Animation
@@ -21,3 +22,18 @@ def gif_loader(file, filename, attrs):
             gif.seek(len(arr))
     except EOFError:
         return Animation(filename, arr, attrs)
+
+def get_host_ip():
+    return re.search(re.compile(r'(?<=inet )(.*)(?=\/)', re.M), os.popen('ip addr show usb0').read()).groups()[0]
+
+def command_shutdown():
+    print('Shutdown commanded')
+    os.system('sudo shutdown -h 00:10 &')
+
+def command_shutdown_cancel():
+    print('Shutdown canceled')
+    os.system('sudo shutdown -c &')
+
+def command_restart():
+    print('Restart commanded')
+    os.system('sudo shutdown -r &')

@@ -3,17 +3,19 @@
 # Main kabuki.py
 
 # imports - use the rpi-rgb-led-matrix instructions to install dependencies
+import os
 import json
 import time
 import queue
 import threading
-from flask import Flask, request
 from rgbmatrix import graphics
 from PIL import Image, ImageDraw
+from flask import Flask, request, render_template, send_from_directory, url_for
 from multiprocessing import JoinableQueue, Process
 
 from face import Face
 from animation import Animation
+from utils import command_shutdown, command_shutdown_cancel, command_restart
 
 # constants used throughout project
 WIDTH = 32
@@ -32,7 +34,6 @@ class Kabuki:
         self.face = Face()
         self.eye_queue = queue.Queue()
         self.mouth_queue = queue.Queue()
-        self.loop_proc = Process(target=self.process_commands)
         self.eye_latch = self.face.eyes['blink'].get_latched()
         self.mouth_latch = self.face.mouths['idle_mouth'].get_latched()
 
@@ -42,8 +43,11 @@ class Kabuki:
 
         @flask_app.route('/', methods=['GET'])
         def get_index():
-            print('index')
-            return 'Hello Kabuki'
+            return render_template('remote.html', eyes=[eye for eye in self.face.eyes], mouths=[mouth for mouth in self.face.mouths])
+        
+        @flask_app.route('/pi', methods=['GET'])
+        def get_pi():
+            return render_template('pi.html')
 
         @flask_app.route('/command', methods=['POST'])
         def command():
@@ -54,6 +58,14 @@ class Kabuki:
                     self.play_seq(json_request['eye'], EYES, json_request['direction'])
                 if 'mouth' in json_request:
                     self.play_seq(json_request['mouth'], MOUTHS, json_request['direction'])
+                if 'shutdown' in json_request:
+                    if json_request['shutdown'] == 'confirm':
+                        command_shutdown()
+                    elif json_request['shutdown'] == 'cancel':
+                        command_shutdown_cancel()
+                if 'restart' in json_request:
+                    if json_request['shutdown'] == 'confirm':
+                        command_restart()
             except KeyError as e:
                 return {'error': str(e) , 'type' : 'KeyError'}
             except Exception as e:
@@ -67,25 +79,21 @@ class Kabuki:
 
         @flask_app.route('/list', methods=['GET'])
         def get_list():
-            return {'eyes' : [eye for eye in self.face.eyes] , 
+            return {
+                    'eyes' : [eye for eye in self.face.eyes] , 
                     'mouths' : [mouth for mouth in self.face.mouths]
-                }
+                    }
 
         def run_flask():
-            flask_app.run(host='0.0.0.0')
+            flask_app.run(host='0.0.0.0', use_reloader=False)
+            flask_app.add_url_rule('/favicon.ico', redirect_to=url_for('static', filename='icon.png'))
 
         # flask listener is a seperate thread
         t = threading.Thread(target=run_flask)
         t.start()
-
         
         # start the render loop on main thread
         self.render_loop()
-
-    def start_flask(self):
-        print('start_flask')
-        self.loop_proc.start()
-        self.flask_app.run(use_reloader=False)
 
     def play_seq(self, expression, board, direction):
         #add sequence to correct queue and reverse if needed
@@ -180,45 +188,6 @@ class Kabuki:
                 time.sleep(SPEED)
             except Exception as e:
                 print('Render Exception:', e)
-
-    
-    def process_commands(self):
-        print('process start')
-
-        while(True):
-            
-            self.play_seq('blink', EYES, 'f')
-            time.sleep(2)
-            self.play_seq('happy', EYES, 'f')
-            time.sleep(2)
-            self.play_hold('happy', EYES, 200)
-            time.sleep(2)
-            self.play_seq('happy', EYES, 'r')
-            time.sleep(3)
-            self.play_seq('smile_closed', MOUTHS, 'f')
-            time.sleep(2)
-            self.play_hold('smile_closed', MOUTHS)
-            time.sleep(2)
-            self.play_seq('smile_closed', MOUTHS, 'r')
-            time.sleep(3)
-            self.play_seq('sad', EYES, 'f')
-            time.sleep(2)
-            self.play_hold('sad', EYES)
-            time.sleep(2)
-            self.play_seq('frown_open', MOUTHS, 'f')
-            time.sleep(2)
-            self.play_hold('frown_open', MOUTHS, 200)
-            time.sleep(2)
-            self.play_seq('cry', EYES, 'f')
-            time.sleep(1)
-            self.play_seq('cry', EYES, 'f')
-            time.sleep(1)
-            self.play_seq('cry', EYES, 'f')
-            time.sleep(1)
-            self.play_seq('sad', EYES, 'r')
-            time.sleep(2)
-            self.play_seq('frown_open', MOUTHS, 'r')
-            time.sleep(2)
 
         #self.matrix.Clear()
         # animations with "loop" are standalone loops, but may need to be prefaced

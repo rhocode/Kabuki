@@ -22,14 +22,12 @@ if __name__ == '__main__':
     options.pixel_mapper_config = 'U-mapper'
     options.gpio_slowdown = 4
     options.hardware_mapping = 'adafruit-hat'
+    options.drop_privileges = 0
     print('Starting Kabuki with', str(options.rows), 'rows', str(options.cols), 'cols', str(options.pixel_mapper_config), str(options.hardware_mapping))
     matrix = RGBMatrix(options = options)
 
     try:
         kabuki = Kabuki(matrix)
-        #t = threading.Thread(target=flask_app.run)
-        #t.start()
-        #kabuki.start_flask()
     except KeyboardInterrupt:
         matrix.Clear()
         print('Ctrl+C pressed, exiting')

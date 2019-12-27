@@ -1,0 +1,48 @@
+<!doctype html>
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAG6SURBVHhe7dpBisMwEADBZP//5+yy5K6DECPTVQR8i0NoBDP2CwAAAMh4f6+P9fn/zPn7Ax/9H/58r0QJIE4AcQKIE0CcAOIEEDc+w07P8dOm9whOgDgBxAkgTgBxAogTQJwA4o7PoONz/mfz9u/ZVcnpPYETIE4AcQKIE0CcAOIEECeAuO0Z8/rn+Q/fA6zs7gmcAHECiBNAnADiBBAngDgBxN2/B1jN8as5/fQeYPf3bfr79q0bOAHiBBAngDgBxAkgTgBxAohbzpDXz/kr0+8DXL4ncALECSBOAHECiBNAnADiBBAngDgBxAkgTgBxAogTQJwA4gQQt3wY/fj3AaZ5H4CbCSBOAHECiBNAnADiBBAngDgBxAkgTgBxAogTQJwA4gQQt/0wOv++wOXP+1ecAHECiBNAnADiBBAngDgBxN2/B1hZzeGnDe8h7AHYIoA4AcQJIE4AcQKIE0Dc8SF2fE/wcLtz/ooTIE4AcQKIE0CcAOIEECeAuON7gJX6nuD0nL/iBIgTQJwA4gQQJ4A4AcQJIG58D7Breo8wPcfvcgLECSBOAHECiBNAnADiBAAAAACQ8Hr9Ai7+MtVfnlPgAAAAAElFTkSuQmCC" type="image/png">
+	<link rel="shortcut icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAG6SURBVHhe7dpBisMwEADBZP//5+yy5K6DECPTVQR8i0NoBDP2CwAAAMh4f6+P9fn/zPn7Ax/9H/58r0QJIE4AcQKIE0CcAOIEEDc+w07P8dOm9whOgDgBxAkgTgBxAogTQJwA4o7PoONz/mfz9u/ZVcnpPYETIE4AcQKIE0CcAOIEECeAuO0Z8/rn+Q/fA6zs7gmcAHECiBNAnADiBBAngDgBxN2/B1jN8as5/fQeYPf3bfr79q0bOAHiBBAngDgBxAkgTgBxAohbzpDXz/kr0+8DXL4ncALECSBOAHECiBNAnADiBBAngDgBxAkgTgBxAogTQJwA4gQQt3wY/fj3AaZ5H4CbCSBOAHECiBNAnADiBBAngDgBxAkgTgBxAogTQJwA4gQQt/0wOv++wOXP+1ecAHECiBNAnADiBBAngDgBxN2/B1hZzeGnDe8h7AHYIoA4AcQJIE4AcQKIE0Dc8SF2fE/wcLtz/ooTIE4AcQKIE0CcAOIEECeAuON7gJX6nuD0nL/iBIgTQJwA4gQQJ4A4AcQJIG58D7Breo8wPcfvcgLECSBOAHECiBNAnADiBAAAAACQ8Hr9Ai7+MtVfnlPgAAAAAElFTkSuQmCC" type="image/png">
+	<title>rPi</title>
+	<style>
+		* {
+			font-family: monospace;
+			color: white;
+			background-color: #333333;
+			text-align: center;
+			align-items: center;
+		}
+		button {
+			font-size: 1.5em;
+			padding: 0.5em;
+			margin: 0.2em;
+			border-color: white;
+			border-radius: 5px;
+		}
+	</style>
+</head>
+<body>
+	<h1>Extra Commands</h1>
+	<button id='power-off' onclick='command("shutdown")'><img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAG6SURBVHhe7dpBisMwEADBZP//5+yy5K6DECPTVQR8i0NoBDP2CwAAAMh4f6+P9fn/zPn7Ax/9H/58r0QJIE4AcQKIE0CcAOIEEDc+w07P8dOm9whOgDgBxAkgTgBxAogTQJwA4o7PoONz/mfz9u/ZVcnpPYETIE4AcQKIE0CcAOIEECeAuO0Z8/rn+Q/fA6zs7gmcAHECiBNAnADiBBAngDgBxN2/B1jN8as5/fQeYPf3bfr79q0bOAHiBBAngDgBxAkgTgBxAohbzpDXz/kr0+8DXL4ncALECSBOAHECiBNAnADiBBAngDgBxAkgTgBxAogTQJwA4gQQt3wY/fj3AaZ5H4CbCSBOAHECiBNAnADiBBAngDgBxAkgTgBxAogTQJwA4gQQt/0wOv++wOXP+1ecAHECiBNAnADiBBAngDgBxN2/B1hZzeGnDe8h7AHYIoA4AcQJIE4AcQKIE0Dc8SF2fE/wcLtz/ooTIE4AcQKIE0CcAOIEECeAuON7gJX6nuD0nL/iBIgTQJwA4gQQJ4A4AcQJIG58D7Breo8wPcfvcgLECSBOAHECiBNAnADiBAAAAACQ8Hr9Ai7+MtVfnlPgAAAAAElFTkSuQmCC' height='20'> POWER OFF</button>
+	<br/>
+	<button id='cancel-off' onclick='command("shutdown-cancel")'><img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAG6SURBVHhe7dpBisMwEADBZP//5+yy5K6DECPTVQR8i0NoBDP2CwAAAMh4f6+P9fn/zPn7Ax/9H/58r0QJIE4AcQKIE0CcAOIEEDc+w07P8dOm9whOgDgBxAkgTgBxAogTQJwA4o7PoONz/mfz9u/ZVcnpPYETIE4AcQKIE0CcAOIEECeAuO0Z8/rn+Q/fA6zs7gmcAHECiBNAnADiBBAngDgBxN2/B1jN8as5/fQeYPf3bfr79q0bOAHiBBAngDgBxAkgTgBxAohbzpDXz/kr0+8DXL4ncALECSBOAHECiBNAnADiBBAngDgBxAkgTgBxAogTQJwA4gQQt3wY/fj3AaZ5H4CbCSBOAHECiBNAnADiBBAngDgBxAkgTgBxAogTQJwA4gQQt/0wOv++wOXP+1ecAHECiBNAnADiBBAngDgBxN2/B1hZzeGnDe8h7AHYIoA4AcQJIE4AcQKIE0Dc8SF2fE/wcLtz/ooTIE4AcQKIE0CcAOIEECeAuON7gJX6nuD0nL/iBIgTQJwA4gQQJ4A4AcQJIG58D7Breo8wPcfvcgLECSBOAHECiBNAnADiBAAAAACQ8Hr9Ai7+MtVfnlPgAAAAAElFTkSuQmCC' height='20'> CANCEL SHUTDOWN</button>
+	<br/>
+	<button id='restart' onclick='command("restart")'><img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAG6SURBVHhe7dpBisMwEADBZP//5+yy5K6DECPTVQR8i0NoBDP2CwAAAMh4f6+P9fn/zPn7Ax/9H/58r0QJIE4AcQKIE0CcAOIEEDc+w07P8dOm9whOgDgBxAkgTgBxAogTQJwA4o7PoONz/mfz9u/ZVcnpPYETIE4AcQKIE0CcAOIEECeAuO0Z8/rn+Q/fA6zs7gmcAHECiBNAnADiBBAngDgBxN2/B1jN8as5/fQeYPf3bfr79q0bOAHiBBAngDgBxAkgTgBxAohbzpDXz/kr0+8DXL4ncALECSBOAHECiBNAnADiBBAngDgBxAkgTgBxAogTQJwA4gQQt3wY/fj3AaZ5H4CbCSBOAHECiBNAnADiBBAngDgBxAkgTgBxAogTQJwA4gQQt/0wOv++wOXP+1ecAHECiBNAnADiBBAngDgBxN2/B1hZzeGnDe8h7AHYIoA4AcQJIE4AcQKIE0Dc8SF2fE/wcLtz/ooTIE4AcQKIE0CcAOIEECeAuON7gJX6nuD0nL/iBIgTQJwA4gQQJ4A4AcQJIG58D7Breo8wPcfvcgLECSBOAHECiBNAnADiBAAAAACQ8Hr9Ai7+MtVfnlPgAAAAAElFTkSuQmCC' height='20'> RESTART</button>
+	<script>
+		shutdown_cmd = JSON.stringify({'shutdown' : 'confirm'});
+		cancel_cmd = JSON.stringify({'shutdown' : 'cancel'});
+		rsetart_cmd = JSON.stringify({'restart' : 'confirm'});
+		function command(cmd) {
+			if (confirm('Are you sure?')) {
+				var xhttp = new XMLHttpRequest();
+				xhttp.open('post', '/command', true);
+				if (cmd == 'restart') {
+					xhttp.send(restart_cmd);
+				} else if (cmd == 'shutdown')
+					xhttp.send(shutdown_cmd);
+				} else if (cmd == 'shutdown-cancel') {
+					xhttp.send(cancel_cmd);
+				}
+		}
+	</script>
+</body>
