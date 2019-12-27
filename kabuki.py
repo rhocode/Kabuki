@@ -1,21 +1,28 @@
 #!/usr/bin/env python
-
 # Main kabuki.py
-
 # imports - use the rpi-rgb-led-matrix instructions to install dependencies
-import os
 import json
-import time
+import os
 import queue
 import threading
-from rgbmatrix import graphics
-from PIL import Image, ImageDraw
-from flask import Flask, request, render_template, send_from_directory, url_for
-from multiprocessing import JoinableQueue, Process
+import time
+from multiprocessing import JoinableQueue
+from multiprocessing import Process
 
-from face import Face
+from flask import Flask
+from flask import render_template
+from flask import request
+from flask import send_from_directory
+from flask import url_for
+from PIL import Image
+from PIL import ImageDraw
+from rgbmatrix import graphics
+
 from animation import Animation
-from utils import command_shutdown, command_shutdown_cancel, command_restart
+from face import Face
+from utils import command_restart
+from utils import command_shutdown
+from utils import command_shutdown_cancel
 
 # constants used throughout project
 WIDTH = 32

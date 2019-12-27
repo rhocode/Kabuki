@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 # animation.py for storing image sequences and key
 
 

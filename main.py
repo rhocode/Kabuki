@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-
 # Main python
-
 # imports - use the rpi-rgb-led-matrix instructions to install dependencies
-import time
 import threading
+import time
+
 from flask import Flask
-from rgbmatrix import RGBMatrix, RGBMatrixOptions
+from rgbmatrix import RGBMatrix
+from rgbmatrix import RGBMatrixOptions
 
 from kabuki import Kabuki
 

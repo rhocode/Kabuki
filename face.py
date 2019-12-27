@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 # Face.py for loading GIFs and images
 import utils
 from animation import Animation

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import re
+
 from PIL import Image
 
 from animation import Animation
