@@ -27,69 +27,73 @@ MOUTHS = 16
 
 
 class Kabuki:
-
     def __init__(self, matrix):
         self.matrix = matrix
         # self.flask_app = flask_app
         self.face = Face()
         self.eye_queue = queue.Queue()
         self.mouth_queue = queue.Queue()
-        self.eye_latch = self.face.eyes['blink'].get_latched()
-        self.mouth_latch = self.face.mouths['idle_mouth'].get_latched()
+        self.eye_latch = self.face.eyes["blink"].get_latched()
+        self.mouth_latch = self.face.mouths["idle_mouth"].get_latched()
 
         flask_app = Flask(__name__)
         flask_app.use_reloader = False
         flask_app.debug = False
 
-        @flask_app.route('/', methods=['GET'])
+        @flask_app.route("/", methods=["GET"])
         def get_index():
-            return render_template('remote.html', eyes=[eye for eye in self.face.eyes], mouths=[mouth for mouth in self.face.mouths])
+            return render_template(
+                "remote.html",
+                eyes=[eye for eye in self.face.eyes],
+                mouths=[mouth for mouth in self.face.mouths],
+            )
 
-        @flask_app.route('/pi', methods=['GET'])
+        @flask_app.route("/pi", methods=["GET"])
         def get_pi():
-            return render_template('pi.html')
+            return render_template("pi.html")
 
-        @flask_app.route('/command', methods=['POST'])
+        @flask_app.route("/command", methods=["POST"])
         def command():
             json_request = json.loads(request.data)
-            print('post command', json_request)
+            print("post command", json_request)
             try:
-                if 'eye' in json_request:
-                    self.play_seq(json_request['eye'],
-                                  EYES, json_request['direction'])
-                if 'mouth' in json_request:
+                if "eye" in json_request:
+                    self.play_seq(json_request["eye"], EYES, json_request["direction"])
+                if "mouth" in json_request:
                     self.play_seq(
-                        json_request['mouth'], MOUTHS, json_request['direction'])
-                if 'shutdown' in json_request:
-                    if json_request['shutdown'] == 'confirm':
+                        json_request["mouth"], MOUTHS, json_request["direction"]
+                    )
+                if "shutdown" in json_request:
+                    if json_request["shutdown"] == "confirm":
                         command_shutdown()
-                    elif json_request['shutdown'] == 'cancel':
+                    elif json_request["shutdown"] == "cancel":
                         command_shutdown_cancel()
-                if 'restart' in json_request:
-                    if json_request['shutdown'] == 'confirm':
+                if "restart" in json_request:
+                    if json_request["shutdown"] == "confirm":
                         command_restart()
             except KeyError as e:
-                return {'error': str(e), 'type': 'KeyError'}
+                return {"error": str(e), "type": "KeyError"}
             except Exception as e:
-                print('Command Exception: ', e)
-                return {'error': 'Internal Server Error'}
-            return {'eye': self.eye_latch.key, 'mouth': self.mouth_latch.key}
+                print("Command Exception: ", e)
+                return {"error": "Internal Server Error"}
+            return {"eye": self.eye_latch.key, "mouth": self.mouth_latch.key}
 
-        @flask_app.route('/status', methods=['GET'])
+        @flask_app.route("/status", methods=["GET"])
         def get_status():
-            return {'eye': self.eye_latch.key, 'mouth': self.mouth_latch.key}
+            return {"eye": self.eye_latch.key, "mouth": self.mouth_latch.key}
 
-        @flask_app.route('/list', methods=['GET'])
+        @flask_app.route("/list", methods=["GET"])
         def get_list():
             return {
-                'eyes': [eye for eye in self.face.eyes],
-                'mouths': [mouth for mouth in self.face.mouths]
+                "eyes": [eye for eye in self.face.eyes],
+                "mouths": [mouth for mouth in self.face.mouths],
             }
 
         def run_flask():
-            flask_app.run(host='0.0.0.0', use_reloader=False)
+            flask_app.run(host="0.0.0.0", use_reloader=False)
             flask_app.add_url_rule(
-                '/favicon.ico', redirect_to=url_for('static', filename='icon.png'))
+                "/favicon.ico", redirect_to=url_for("static", filename="icon.png")
+            )
 
         # flask listener is a seperate thread
         t = threading.Thread(target=run_flask)
@@ -112,7 +116,7 @@ class Kabuki:
 
         sequence = seq_source[expression]
 
-        if direction == 'r':
+        if direction == "r":
             sequence = sequence.get_reversed()
 
         used_queue.put(sequence)
@@ -120,7 +124,8 @@ class Kabuki:
     def play_hold(self, hold, board, duration=IDLE_TIME):
         # generate a bunch of frames to hold
         hold_seq = Animation(
-            'hold_' + hold, [self.face.hold_frames[hold] for i in range(duration)])
+            "hold_" + hold, [self.face.hold_frames[hold] for i in range(duration)]
+        )
 
         if board == EYES:
             self.eye_queue.put(hold_seq)
@@ -131,7 +136,7 @@ class Kabuki:
         idx = 0
         # default hold is no expression from blink
         self.current_eye = self.eye_latch
-        while(True):
+        while True:
             if self.eye_queue.empty() and len(self.current_eye) == idx:
                 # reset
                 idx = 0
@@ -142,7 +147,7 @@ class Kabuki:
                     if self.current_eye.is_latch():
                         self.eye_latch = self.current_eye.get_latched()
                     idx = 0
-            #print(current_eye, idx)
+            # print(current_eye, idx)
             yield self.current_eye[idx]
             idx += 1
 
@@ -150,7 +155,7 @@ class Kabuki:
         idx = 0
         # default hold is a line from smile_closed
         self.current_mouth = self.mouth_latch
-        while(True):
+        while True:
             if self.mouth_queue.empty() and len(self.current_mouth) == idx:
                 # reset
                 idx = 0
@@ -168,165 +173,165 @@ class Kabuki:
         eye_frame = self.compute_eyes()
         mouth_frame = self.compute_mouth()
 
-        while(True):
+        while True:
             # do work to combine eyes and mouths and yield resulting frame
-            frame = Image.new('RGB', (WIDTH, HEIGHT))
+            frame = Image.new("RGB", (WIDTH, HEIGHT))
             try:
                 frame.paste(next(eye_frame), (0, EYES))
             except Exception as e:
-                print('Eye Exception:', e)
+                print("Eye Exception:", e)
 
             try:
                 frame.paste(next(mouth_frame), (0, MOUTHS))
             except Exception as e:
-                print('Mouth Exception:', e)
+                print("Mouth Exception:", e)
             yield frame
 
     def render_loop(self):
         next_frame = self.compute_frame()
-        while(True):
+        while True:
             try:
                 self.matrix.SetImage(next(next_frame), 0, 0)
                 time.sleep(SPEED)
             except Exception as e:
-                print('Render Exception:', e)
+                print("Render Exception:", e)
 
         # self.matrix.Clear()
         # animations with "loop" are standalone loops, but may need to be prefaced
         # by a different state (eg sad first then cry) - if triggered seperately, split out seq
         # unless noted, faces return to neutral
 
-            # ###### EYES #######
-            # # idle (blink) loop
-            # self.play_hold(self.face.hold_idle, EYES)
-            # self.play_seq(self.face.eyes['blink'], EYES)
-            # self.play_hold(self.face.hold_idle, EYES)
+        # ###### EYES #######
+        # # idle (blink) loop
+        # self.play_hold(self.face.hold_idle, EYES)
+        # self.play_seq(self.face.eyes['blink'], EYES)
+        # self.play_hold(self.face.hold_idle, EYES)
 
-            # # happy
-            # self.play_seq(self.face.eyes['happy'], EYES)
-            # self.play_hold(self.face.hold_happy, EYES)
-            # self.play_seq(reversed(self.face.eyes['happy']), EYES)
+        # # happy
+        # self.play_seq(self.face.eyes['happy'], EYES)
+        # self.play_hold(self.face.hold_happy, EYES)
+        # self.play_seq(reversed(self.face.eyes['happy']), EYES)
 
-            # # sad
-            # self.play_seq(self.face.eyes['sad'], EYES)
-            # self.play_hold(self.face.hold_sad, EYES)
-            # self.play_seq(reversed(self.face.eyes['sad']), EYES)
+        # # sad
+        # self.play_seq(self.face.eyes['sad'], EYES)
+        # self.play_hold(self.face.hold_sad, EYES)
+        # self.play_seq(reversed(self.face.eyes['sad']), EYES)
 
-            # # cry loop (return to sad)
-            # self.play_seq(self.face.eyes['sad'], EYES)
-            # self.play_seq(self.face.eyes['cry'], EYES)
-            # self.play_seq(self.face.eyes['cry'], EYES)
-            # self.play_seq(self.face.eyes['cry'], EYES)
-            # self.play_seq(reversed(self.face.eyes['sad']), EYES)
+        # # cry loop (return to sad)
+        # self.play_seq(self.face.eyes['sad'], EYES)
+        # self.play_seq(self.face.eyes['cry'], EYES)
+        # self.play_seq(self.face.eyes['cry'], EYES)
+        # self.play_seq(self.face.eyes['cry'], EYES)
+        # self.play_seq(reversed(self.face.eyes['sad']), EYES)
 
-            # # angry
-            # self.play_seq(self.face.eyes['angry'], EYES)
-            # self.play_hold(self.face.hold_angry, EYES)
-            # self.play_seq(reversed(self.face.eyes['angry']), EYES)
+        # # angry
+        # self.play_seq(self.face.eyes['angry'], EYES)
+        # self.play_hold(self.face.hold_angry, EYES)
+        # self.play_seq(reversed(self.face.eyes['angry']), EYES)
 
-            # # suspicious
-            # self.play_seq(self.face.eyes['suspicious'], EYES)
-            # self.play_hold(self.face.hold_suspicious, EYES)
-            # self.play_seq(reversed(self.face.eyes['suspicious']), EYES)
+        # # suspicious
+        # self.play_seq(self.face.eyes['suspicious'], EYES)
+        # self.play_hold(self.face.hold_suspicious, EYES)
+        # self.play_seq(reversed(self.face.eyes['suspicious']), EYES)
 
-            # # sleep
-            # self.play_seq(self.face.eyes['sleep'], EYES)
-            # self.play_hold(self.face.hold_sleep, EYES)
-            # self.play_seq(reversed(self.face.eyes['sleep']), EYES)
+        # # sleep
+        # self.play_seq(self.face.eyes['sleep'], EYES)
+        # self.play_hold(self.face.hold_sleep, EYES)
+        # self.play_seq(reversed(self.face.eyes['sleep']), EYES)
 
-            # # surprise
-            # self.play_seq(self.face.eyes['surprise'], EYES)
-            # self.play_hold(self.face.hold_surprise, EYES)
-            # self.play_seq(reversed(self.face.eyes['surprise']), EYES)
+        # # surprise
+        # self.play_seq(self.face.eyes['surprise'], EYES)
+        # self.play_hold(self.face.hold_surprise, EYES)
+        # self.play_seq(reversed(self.face.eyes['surprise']), EYES)
 
-            # # off
-            # self.play_seq(self.face.eyes['off'], EYES)
-            # self.play_seq(reversed(self.face.eyes['off']), EYES)
+        # # off
+        # self.play_seq(self.face.eyes['off'], EYES)
+        # self.play_seq(reversed(self.face.eyes['off']), EYES)
 
-            # # heart in to loop
-            # self.play_seq(self.face.eyes['off'], EYES)
-            # self.play_seq(self.face.eyes['heart_in'], EYES)
-            # self.play_seq(self.face.eyes['heart_loop'], EYES)
-            # self.play_seq(self.face.eyes['heart_loop'], EYES)
-            # self.play_seq(self.face.eyes['heart_loop'], EYES)
-            # self.play_seq(reversed(self.face.eyes['heart_in']), EYES)
-            # self.play_seq(reversed(self.face.eyes['off']), EYES)
+        # # heart in to loop
+        # self.play_seq(self.face.eyes['off'], EYES)
+        # self.play_seq(self.face.eyes['heart_in'], EYES)
+        # self.play_seq(self.face.eyes['heart_loop'], EYES)
+        # self.play_seq(self.face.eyes['heart_loop'], EYES)
+        # self.play_seq(self.face.eyes['heart_loop'], EYES)
+        # self.play_seq(reversed(self.face.eyes['heart_in']), EYES)
+        # self.play_seq(reversed(self.face.eyes['off']), EYES)
 
-            # # sunglasses
-            # self.play_seq(self.face.eyes['sunglasses'], EYES)
-            # self.play_hold(self.face.hold_sunglasses, EYES)
-            # self.play_seq(reversed(self.face.eyes['sunglasses']), EYES)
+        # # sunglasses
+        # self.play_seq(self.face.eyes['sunglasses'], EYES)
+        # self.play_hold(self.face.hold_sunglasses, EYES)
+        # self.play_seq(reversed(self.face.eyes['sunglasses']), EYES)
 
-            # # x eyes
-            # self.play_seq(self.face.eyes['x_eyes'], EYES)
-            # self.play_hold(self.face.hold_x_eyes, EYES)
-            # self.play_seq(reversed(self.face.eyes['x_eyes']), EYES)
+        # # x eyes
+        # self.play_seq(self.face.eyes['x_eyes'], EYES)
+        # self.play_hold(self.face.hold_x_eyes, EYES)
+        # self.play_seq(reversed(self.face.eyes['x_eyes']), EYES)
 
-            # # left
-            # self.play_seq(self.face.eyes['left'], EYES)
-            # self.play_hold(self.face.hold_left, EYES)
-            # self.play_seq(reversed(self.face.eyes['left']), EYES)
+        # # left
+        # self.play_seq(self.face.eyes['left'], EYES)
+        # self.play_hold(self.face.hold_left, EYES)
+        # self.play_seq(reversed(self.face.eyes['left']), EYES)
 
-            # # right
-            # self.play_seq(self.face.eyes['right'], EYES)
-            # self.play_hold(self.face.hold_right, EYES)
-            # self.play_seq(reversed(self.face.eyes['right']), EYES)
+        # # right
+        # self.play_seq(self.face.eyes['right'], EYES)
+        # self.play_hold(self.face.hold_right, EYES)
+        # self.play_seq(reversed(self.face.eyes['right']), EYES)
 
-            # # ! !
-            # self.play_seq(self.face.eyes['exclaim'], EYES)
-            # self.play_hold(self.face.hold_exclaim, EYES)
-            # self.play_seq(reversed(self.face.eyes['exclaim']), EYES)
+        # # ! !
+        # self.play_seq(self.face.eyes['exclaim'], EYES)
+        # self.play_hold(self.face.hold_exclaim, EYES)
+        # self.play_seq(reversed(self.face.eyes['exclaim']), EYES)
 
-            # # ? ?
-            # self.play_seq(self.face.eyes['question'], EYES)
-            # self.play_hold(self.face.hold_question, EYES)
-            # self.play_seq(reversed(self.face.eyes['question']), EYES)
+        # # ? ?
+        # self.play_seq(self.face.eyes['question'], EYES)
+        # self.play_hold(self.face.hold_question, EYES)
+        # self.play_seq(reversed(self.face.eyes['question']), EYES)
 
-            # ##### mouths #####
-            # # idle
-            # self.play_hold(self.face.hold_line, mouths)
+        # ##### mouths #####
+        # # idle
+        # self.play_hold(self.face.hold_line, mouths)
 
-            # # smile closed
-            # self.play_seq(self.face.mouths['smile_closed'], mouths)
-            # self.play_hold(self.face.hold_smile_closed, mouths)
-            # self.play_seq(reversed(self.face.mouths['smile_closed']), mouths)
+        # # smile closed
+        # self.play_seq(self.face.mouths['smile_closed'], mouths)
+        # self.play_hold(self.face.hold_smile_closed, mouths)
+        # self.play_seq(reversed(self.face.mouths['smile_closed']), mouths)
 
-            # # smile open
-            # self.play_seq(self.face.mouths['smile_open'], mouths)
-            # self.play_hold(self.face.hold_smile_open, mouths)
-            # self.play_seq(reversed(self.face.mouths['smile_open']), mouths)
+        # # smile open
+        # self.play_seq(self.face.mouths['smile_open'], mouths)
+        # self.play_hold(self.face.hold_smile_open, mouths)
+        # self.play_seq(reversed(self.face.mouths['smile_open']), mouths)
 
-            # # frown closed
-            # self.play_seq(self.face.mouths['frown_closed'], mouths)
-            # self.play_hold(self.face.hold_frown_closed, mouths)
-            # self.play_seq(reversed(self.face.mouths['frown_closed']), mouths)
+        # # frown closed
+        # self.play_seq(self.face.mouths['frown_closed'], mouths)
+        # self.play_hold(self.face.hold_frown_closed, mouths)
+        # self.play_seq(reversed(self.face.mouths['frown_closed']), mouths)
 
-            # # frown open
-            # self.play_seq(self.face.mouths['frown_open'], mouths)
-            # self.play_hold(self.face.hold_frown_open, mouths)
-            # self.play_seq(reversed(self.face.mouths['frown_open']), mouths)
+        # # frown open
+        # self.play_seq(self.face.mouths['frown_open'], mouths)
+        # self.play_hold(self.face.hold_frown_open, mouths)
+        # self.play_seq(reversed(self.face.mouths['frown_open']), mouths)
 
-            # # surprise o
-            # self.play_seq(self.face.mouths['o_mouth'], mouths)
-            # self.play_hold(self.face.hold_o_mouth, mouths)
-            # self.play_seq(reversed(self.face.mouths['o_mouth']), mouths)
+        # # surprise o
+        # self.play_seq(self.face.mouths['o_mouth'], mouths)
+        # self.play_hold(self.face.hold_o_mouth, mouths)
+        # self.play_seq(reversed(self.face.mouths['o_mouth']), mouths)
 
-            # # smirk
-            # self.play_seq(self.face.mouths['smirk'], mouths)
-            # self.play_hold(self.face.hold_smirk, mouths)
-            # self.play_seq(reversed(self.face.mouths['smirk']), mouths)
+        # # smirk
+        # self.play_seq(self.face.mouths['smirk'], mouths)
+        # self.play_hold(self.face.hold_smirk, mouths)
+        # self.play_seq(reversed(self.face.mouths['smirk']), mouths)
 
-            # # tongue out
-            # self.play_seq(self.face.mouths['tongue'], mouths)
-            # self.play_hold(self.face.hold_tongue, mouths)
-            # self.play_seq(reversed(self.face.mouths['tongue']), mouths)
+        # # tongue out
+        # self.play_seq(self.face.mouths['tongue'], mouths)
+        # self.play_hold(self.face.hold_tongue, mouths)
+        # self.play_seq(reversed(self.face.mouths['tongue']), mouths)
 
-            # # cat
-            # self.play_seq(self.face.mouths['cat'], mouths)
-            # self.play_hold(self.face.hold_cat, mouths)
-            # self.play_seq(reversed(self.face.mouths['cat']), mouths)
+        # # cat
+        # self.play_seq(self.face.mouths['cat'], mouths)
+        # self.play_hold(self.face.hold_cat, mouths)
+        # self.play_seq(reversed(self.face.mouths['cat']), mouths)
 
-            # # off
-            # self.play_seq(self.face.mouths['mouth_off'], mouths)
-            # self.play_hold(self.face.hold_mouth_off, mouths)
-            # self.play_seq(reversed(self.face.mouths['mouth_off']), mouths)
+        # # off
+        # self.play_seq(self.face.mouths['mouth_off'], mouths)
+        # self.play_hold(self.face.hold_mouth_off, mouths)
+        # self.play_seq(reversed(self.face.mouths['mouth_off']), mouths)

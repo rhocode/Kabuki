@@ -4,7 +4,7 @@
 
 
 class Animation:
-    def __init__(self, key='', sequence=[], attrs={}):
+    def __init__(self, key="", sequence=[], attrs={}):
         self.key = key
         self.sequence = sequence
         self.attrs = attrs
@@ -16,9 +16,9 @@ class Animation:
         self.key = key
 
     def get_reversed(self):
-        frame = self.attrs.get('hold_frame', -1)
+        frame = self.attrs.get("hold_frame", -1)
         new_attrs = self.attrs.copy()
-        return Animation('rev_' + self.key, self.sequence[::-1], new_attrs)
+        return Animation("rev_" + self.key, self.sequence[::-1], new_attrs)
 
     def __getitem__(self, key):
         return self.sequence[-1] if len(self.sequence) <= key else self.sequence[key]
@@ -30,6 +30,6 @@ class Animation:
         return self.attrs.get("latch", True)
 
     def get_latched(self):
-        frame = self.attrs.get('hold_frame', -1)
+        frame = self.attrs.get("hold_frame", -1)
         newAttrs = self.attrs.copy()
-        return Animation('hold_' + self.key, [self.sequence[frame]])
+        return Animation("hold_" + self.key, [self.sequence[frame]])
