@@ -1,0 +1,102 @@
+<!doctype html>
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACABAMAAAAxEHz4AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAwUExURQAAAAD/AAD/IQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGjMNhsAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABKSURBVGje7cyxDYAwAANBr8AK7D8k1BEJUsr4rn3pAwAr92unGRgYGBicOQAAGF0/DDoG60XSMZgvkp7B9yLpGoyT7DhgAECd5AE9MkDRQ6OLrgAAAABJRU5ErkJggg==" type="image/png">
+	<link rel="shortcut icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACABAMAAAAxEHz4AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAwUExURQAAAAD/AAD/IQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGjMNhsAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABKSURBVGje7cyxDYAwAANBr8AK7D8k1BEJUsr4rn3pAwAr92unGRgYGBicOQAAGF0/DDoG60XSMZgvkp7B9yLpGoyT7DhgAECd5AE9MkDRQ6OLrgAAAABJRU5ErkJggg==" type="image/png">
+	<title>Kabuki</title>
+	<style>
+		* {
+			font-family: monospace;
+			color: white;
+			background-color: #333333;
+			text-align: center;
+			align-items: center;
+		}
+		button {
+			font-size: 1.5em;
+			padding: 0.5em;
+			margin: 0.2em;
+			border-color: white;
+			border-radius: 5px;
+		}
+		.select {
+			background-color: green;
+		}
+	</style>
+</head>
+<body>
+	<h2>Quick Actions</h2>
+	<button onclick="send_quick('off', 'mouth_off')">off</button>
+	<button onclick="send_quick('blink', 'idle_mouth')">neutral</button>
+	<button onclick="send_quick('happy', 'smile_closed')">happy</button>
+	<button onclick="send_quick('sad', 'frown_closed')">sad</button>
+	<button onclick="send_quick('surprise', 'o_mouth')">surprise</button>
+	<br/>
+	<h2>Eye</h2>
+	{% for eye in eyes %}
+		<button class='eye-btn' id='eye_{{eye}}' onclick='send_command("{{eye}}" ,"eye")'>{{ eye }}</button>
+	{% endfor %}
+	<br/>
+	<h2>Mouth</h2>
+	{% for mouth in mouths %}
+		<button class='mouth-btn' id='mouth_{{mouth}}' onclick='send_command("{{mouth}}" ,"mouth")'>{{ mouth }}</button>
+	{% endfor %}
+
+	<script>
+		function send_quick(command_eye, command_mouth) {
+			send_command(command_eye, 'eye')
+			send_command(command_mouth, 'mouth')
+		}
+
+		function set_button(command, part) {
+			if (part == 'eye') {
+				eyeButtons = document.getElementsByClassName('eye-btn')
+				Array.from(eyeButtons).forEach(e => {;
+					e.classList.remove('select');
+				})
+				document.getElementById('eye_'+command).classList.add('select');
+			} else if (part == 'mouth') {
+				mouthButtons = document.getElementsByClassName('mouth-btn');
+				Array.from(mouthButtons).forEach(e => {
+					e.classList.remove('select');
+				})
+				document.getElementById('mouth_'+command).classList.add('select');
+			}
+		}
+
+		async function send_command(command, part) {
+			cmd = ''
+			if (part == 'eye') {
+				cmd = JSON.stringify({'eye' : command, 'direction' : 'f'});
+			} else if (part == 'mouth') {
+				cmd = JSON.stringify({'mouth' : command, 'direction' : 'f'});
+			} else {
+				alert('Invalid Command!');
+			}
+			if (cmd != '') {
+				var xhttp = new XMLHttpRequest();
+				xhttp.open('post', '/command', true);
+				xhttp.send(cmd);
+				set_button(command, part);
+				await new Promise(r => setTimeout(r, 500));
+				refresh_state();
+			}
+		}
+
+		function refresh_state() {
+			var xhttp = new XMLHttpRequest();
+			xhttp.open('get', '/status', true);
+			xhttp.onreadystatechange = function() {
+				if (xhttp.readyState === 4) {
+					response = JSON.parse(this.responseText)
+					new_eye = response.eye.split('hold_')[1];
+					new_mouth = response.mouth.split('hold_')[1];
+					set_button(new_eye, 'eye');
+					set_button(new_mouth, 'mouth');
+				}
+			}
+			xhttp.send();
+		}
+		refresh_state();
+	</script>
+</body>
