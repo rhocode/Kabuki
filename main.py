@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # Main python
 # imports - use the rpi-rgb-led-matrix instructions to install dependencies
-import threading
-import time
 
 from flask import Flask
 from rgbmatrix import RGBMatrix
@@ -23,6 +21,7 @@ if __name__ == "__main__":
     options.gpio_slowdown = 4
     options.hardware_mapping = "adafruit-hat"
     options.drop_privileges = 0
+    #options.show_refresh_rate = 1
     print(
         "Starting Kabuki with",
         str(options.rows),

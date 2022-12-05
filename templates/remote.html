@@ -49,6 +49,9 @@
 		}
 
 		function set_button(command, part) {
+			if ('rev_' === command.substring(0, 4)) {
+				return;
+			}
 			if (part == 'eye') {
 				eyeButtons = document.getElementsByClassName('eye-btn')
 				Array.from(eyeButtons).forEach(e => {;

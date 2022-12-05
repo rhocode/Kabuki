@@ -2,32 +2,25 @@
 # Main kabuki.py
 # imports - use the rpi-rgb-led-matrix instructions to install dependencies
 import json
-import os
 import queue
 import threading
 import time
-from multiprocessing import JoinableQueue
-from multiprocessing import Process
 
-from flask import Flask
-from flask import render_template
-from flask import request
-from flask import send_from_directory
-from flask import url_for
-from PIL import Image
-from PIL import ImageDraw
+from flask import Flask, render_template, request, send_from_directory, url_for
+from PIL import Image, ImageDraw, ImageFile
+
 from rgbmatrix import graphics
 
 from animation import Animation
 from face import Face
-from utils import command_restart
-from utils import command_shutdown
-from utils import command_shutdown_cancel
+from utils import command_restart, command_shutdown, command_shutdown_cancel
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 # constants used throughout project
 WIDTH = 32
 HEIGHT = 32
-SPEED = 1.0 / 15.0
+SPEED = 1.0 / 10.0
 IDLE_TIME = 50
 EYES = 0
 MOUTHS = 16
@@ -42,6 +35,8 @@ class Kabuki:
         self.mouth_queue = queue.Queue()
         self.eye_latch = self.face.eyes["blink"].get_latched()
         self.mouth_latch = self.face.mouths["idle_mouth"].get_latched()
+        self.last_eye = None
+        self.last_mouth = None
 
         flask_app = Flask(__name__)
         flask_app.use_reloader = False
@@ -65,11 +60,17 @@ class Kabuki:
             print("post command", json_request)
             try:
                 if "eye" in json_request:
-                    self.play_seq(json_request["eye"], EYES,
-                                  json_request["direction"])
+                    if not self.last_eye == None:
+                        self.play_seq(self.last_eye, EYES, "r")
+                        time.sleep(0.5)
+                    self.play_seq(json_request["eye"], EYES, json_request["direction"])
+                    self.last_eye = json_request["eye"]
                 if "mouth" in json_request:
-                    self.play_seq(json_request["mouth"], MOUTHS,
-                                  json_request["direction"])
+                    if not self.last_mouth == None:
+                        self.play_seq(self.last_mouth, MOUTHS, "r")
+                        time.sleep(0.5)
+                    self.play_seq(json_request["mouth"], MOUTHS, json_request["direction"])
+                    self.last_mouth = json_request["mouth"]
                 if "shutdown" in json_request:
                     if json_request["shutdown"] == "confirm":
                         command_shutdown()
@@ -103,7 +104,7 @@ class Kabuki:
                                                        filename="icon.png"))
 
         # flask listener is a seperate thread
-        t = threading.Thread(target=run_flask)
+        t = threading.Thread(target=run_flask, daemon=True)
         t.start()
 
         # start the render loop on main thread
@@ -148,12 +149,11 @@ class Kabuki:
                 # reset
                 idx = 0
                 self.current_eye = self.eye_latch
-            else:
-                if not self.eye_queue.empty():
-                    self.current_eye = self.eye_queue.get()
-                    if self.current_eye.is_latch():
-                        self.eye_latch = self.current_eye.get_latched()
-                    idx = 0
+            elif not self.eye_queue.empty():
+                self.current_eye = self.eye_queue.get()
+                if self.current_eye.is_latch():
+                    self.eye_latch = self.current_eye.get_latched()
+                idx = 0
             # print(current_eye, idx)
             yield self.current_eye[idx]
             idx += 1
@@ -167,12 +167,11 @@ class Kabuki:
                 # reset
                 idx = 0
                 self.current_mouth = self.mouth_latch
-            else:
-                if not self.mouth_queue.empty():
-                    self.current_mouth = self.mouth_queue.get()
-                    if self.current_mouth.is_latch():
-                        self.mouth_latch = self.current_mouth.get_latched()
-                    idx = 0
+            elif not self.mouth_queue.empty():
+                self.current_mouth = self.mouth_queue.get()
+                if self.current_mouth.is_latch():
+                    self.mouth_latch = self.current_mouth.get_latched()
+                idx = 0
             yield self.current_mouth[idx]
             idx += 1
 

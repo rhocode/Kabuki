@@ -19,13 +19,16 @@ def load_files(used_dir, overrides, dest_dict, path):
 def gif_loader(file, filename, attrs):
     # loads a gif into the array for storage
     arr = []
-    gif = Image.open(file, "r")
     try:
-        while True:
-            arr.append(gif.copy().convert("RGB"))
-            gif.seek(len(arr))
-    except EOFError:
-        return Animation(filename, arr, attrs)
+        with Image.open(file, "r") as gif:
+            try:
+                while True:
+                    arr.append(gif.copy().convert("RGB"))
+                    gif.seek(len(arr))
+            except EOFError:
+                return Animation(filename, arr, attrs)
+    except Exception as e:
+            print(str(e))
 
 
 def get_host_ip():
