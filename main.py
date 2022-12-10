@@ -2,7 +2,6 @@
 # Main python
 # imports - use the rpi-rgb-led-matrix instructions to install dependencies
 
-from flask import Flask
 from rgbmatrix import RGBMatrix
 from rgbmatrix import RGBMatrixOptions
 

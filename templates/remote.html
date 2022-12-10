@@ -68,11 +68,17 @@
 		}
 
 		async function send_command(command, part) {
-			cmd = ''
+			var cmd = '';
+			var direction = 'f';
+
+			if (command.includes('loop')) {
+				direction = 'l';
+			}
+
 			if (part == 'eye') {
-				cmd = JSON.stringify({'eye' : command, 'direction' : 'f'});
+				cmd = JSON.stringify({'eye' : command, 'direction' : direction});
 			} else if (part == 'mouth') {
-				cmd = JSON.stringify({'mouth' : command, 'direction' : 'f'});
+				cmd = JSON.stringify({'mouth' : command, 'direction' : direction});
 			} else {
 				alert('Invalid Command!');
 			}
